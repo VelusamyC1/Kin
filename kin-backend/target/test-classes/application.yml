@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/kin_test
+    username: ${DB_USERNAME:kin}
+    password: ${DB_PASSWORD:kin}
+  flyway:
+    enabled: true
+  jpa:
+    show-sql: false
+
+kin:
+  jwt:
+    secret: test-secret-key-must-be-at-least-32-chars-long
+    access-token-expiry-ms: 900000
+    refresh-token-expiry-days: 30
