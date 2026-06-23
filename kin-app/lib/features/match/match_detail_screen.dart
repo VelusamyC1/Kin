@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
+import '../../core/theme.dart';
 
 final _matchDetailProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
   final dio = ref.watch(dioProvider);
@@ -49,24 +50,23 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     }
   }
 
-  Future<List<Map<String, int>>?> _showDisputeDialog() async {
+  Future<List<Map<String, int>>?> _showDisputeDialog() {
     final t1 = TextEditingController(text: '7');
     final t2 = TextEditingController(text: '5');
     return showDialog<List<Map<String, int>>>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Propose corrected score'),
+        backgroundColor: kDarkCard,
+        title: const Text('Propose corrected score', style: TextStyle(color: kWhite)),
         content: Row(children: [
-          Expanded(child: TextField(controller: t1, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Team 1'))),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('–')),
-          Expanded(child: TextField(controller: t2, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Team 2'))),
+          Expanded(child: TextField(controller: t1, keyboardType: TextInputType.number, style: const TextStyle(color: kWhite), decoration: const InputDecoration(labelText: 'Team 1'))),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('–', style: TextStyle(color: kWhite, fontSize: 20))),
+          Expanded(child: TextField(controller: t2, keyboardType: TextInputType.number, style: const TextStyle(color: kWhite), decoration: const InputDecoration(labelText: 'Team 2'))),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, [
-              {'team1Games': int.tryParse(t1.text) ?? 7, 'team2Games': int.tryParse(t2.text) ?? 5}
-            ]),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: Colors.white.withOpacity(0.5)))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, [{'team1Games': int.tryParse(t1.text) ?? 7, 'team2Games': int.tryParse(t2.text) ?? 5}]),
             child: const Text('Submit'),
           ),
         ],
@@ -89,106 +89,93 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             'confirmed' => Colors.green,
             'disputed'  => Colors.orange,
             'expired'   => Colors.grey,
-            _           => Colors.blue,
+            _           => kLime,
           };
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             children: [
-              // Status chip
               Center(
-                child: Chip(
-                  label: Text(status.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
-                  backgroundColor: statusColor.withOpacity(0.15),
-                  labelStyle: TextStyle(color: statusColor),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Sets
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Score', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      ...sets.asMap().entries.map((e) {
-                        final s = e.value as Map;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Text('Set ${e.key + 1}  ', style: const TextStyle(color: Colors.grey)),
-                              Text('${s['team1Games']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                              const Text(' – ', style: TextStyle(fontSize: 20)),
-                              Text('${s['team2Games']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Players
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Players', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      ...players.map((p) {
-                        final pm = p as Map;
-                        return ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('Team ${pm['teamNumber']}'),
-                          subtitle: Text('${pm['userId']}'),
-                          trailing: pm['confirmed'] == true
-                              ? const Icon(Icons.check_circle, color: Colors.green, size: 18)
-                              : const Icon(Icons.pending, color: Colors.orange, size: 18),
-                        );
-                      }),
-                    ],
-                  ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
+                  child: Text(status.toUpperCase(), style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, letterSpacing: 1)),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Actions
-              if (status == 'pending') ...[
-                FilledButton.icon(
-                  onPressed: _actioning ? null : _confirm,
-                  icon: const Icon(Icons.check),
-                  label: const Text('Confirm Result'),
+              // Sets
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: kDarkCard, borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('SCORE', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                    ...sets.asMap().entries.map((e) {
+                      final s = e.value as Map;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(children: [
+                          Text('Set ${e.key + 1}  ', style: TextStyle(color: Colors.white.withOpacity(0.4))),
+                          Text('${s['team1Games']}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: kWhite)),
+                          Text(' – ', style: TextStyle(fontSize: 28, color: Colors.white.withOpacity(0.3))),
+                          Text('${s['team2Games']}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: kWhite)),
+                        ]),
+                      );
+                    }),
+                  ],
                 ),
-                const SizedBox(height: 8),
+              ),
+              const SizedBox(height: 16),
+
+              // Players
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: kDarkCard, borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PLAYERS', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                    ...players.map((p) {
+                      final pm = p as Map;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(children: [
+                          Expanded(child: Text('Team ${pm['teamNumber']}', style: const TextStyle(color: kWhite, fontWeight: FontWeight.w500))),
+                          pm['confirmed'] == true
+                              ? const Icon(Icons.check_circle, color: kLime, size: 18)
+                              : Icon(Icons.pending, color: Colors.white.withOpacity(0.3), size: 18),
+                        ]),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              if (status == 'pending' || status == 'disputed') ...[
+                if (status == 'pending')
+                  ElevatedButton.icon(
+                    onPressed: _actioning ? null : _confirm,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Confirm Result'),
+                  ),
+                const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: _actioning ? null : _dispute,
-                  icon: const Icon(Icons.gavel),
+                  icon: const Icon(Icons.gavel, color: Colors.orange),
                   label: const Text('Dispute Score'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.orange),
-                ),
-              ],
-              if (status == 'disputed') ...[
-                OutlinedButton.icon(
-                  onPressed: _actioning ? null : _dispute,
-                  icon: const Icon(Icons.gavel),
-                  label: const Text('Submit New Dispute'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.orange),
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.orange, side: const BorderSide(color: Colors.orange)),
                 ),
               ],
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(child: CircularProgressIndicator(color: kLime)),
+        error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
       ),
     );
   }

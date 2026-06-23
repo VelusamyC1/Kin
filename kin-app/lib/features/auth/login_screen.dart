@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme.dart';
 import 'auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -11,10 +12,10 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _form = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _pass = TextEditingController();
   bool _obscure = true;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -24,70 +25,116 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_form.currentState!.validate()) return;
+    if (_email.text.trim().isEmpty || _pass.text.isEmpty) return;
+    setState(() => _loading = true);
     final ok = await ref.read(authProvider.notifier).login(_email.text.trim(), _pass.text);
     if (!mounted) return;
+    setState(() => _loading = false);
     if (ok) {
       context.go('/home');
     } else {
-      final err = ref.read(authProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err?.toString() ?? 'Login failed'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Invalid email or password'), backgroundColor: Colors.red),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final loading = ref.watch(authProvider).isLoading;
-    final cs = Theme.of(context).colorScheme;
-
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _form,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 48),
-                Text('KIN', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: cs.primary, letterSpacing: 4)),
-                const Text('doubles. ranked.', style: TextStyle(color: Colors.grey, letterSpacing: 2)),
-                const SizedBox(height: 48),
-                TextFormField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (v) => v != null && v.contains('@') ? null : 'Enter valid email',
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _pass,
-                  obscureText: _obscure,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                      onPressed: () => setState(() => _obscure = !_obscure),
-                    ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 48),
+
+              const Text(
+                'Welcome\nback',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: kWhite, height: 1.2),
+              ),
+              const SizedBox(height: 32),
+
+              // Apple button
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.apple, color: kWhite, size: 22),
+                label: const Text('Continue with Apple'),
+              ),
+              const SizedBox(height: 12),
+
+              // Google button
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Text('G', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                label: const Text('Continue with Google'),
+              ),
+              const SizedBox(height: 24),
+
+              // OR divider
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('OR', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
                   ),
-                  validator: (v) => v != null && v.length >= 8 ? null : 'Min 8 characters',
+                  Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Email
+              Text('EMAIL', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: kWhite),
+                decoration: const InputDecoration(hintText: 'you@email.com'),
+              ),
+              const SizedBox(height: 16),
+
+              // Password
+              Text('PASSWORD', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _pass,
+                obscureText: _obscure,
+                style: const TextStyle(color: kWhite),
+                decoration: InputDecoration(
+                  hintText: 'Your password',
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility, color: Colors.white38),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                  ),
                 ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: loading ? null : _submit,
-                  child: loading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Sign In'),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => context.go('/signup'),
-                  child: const Text("Don't have an account? Sign up"),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 28),
+
+              // Sign in
+              ElevatedButton(
+                onPressed: _loading ? null : _submit,
+                child: _loading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: kNavy))
+                    : const Text('Log in'),
+              ),
+              const SizedBox(height: 24),
+
+              // Footer
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("Don't have an account? ", style: TextStyle(color: Colors.white.withOpacity(0.5))),
+                  GestureDetector(
+                    onTap: () => context.go('/signup'),
+                    child: const Text('Sign up', style: TextStyle(color: kLime, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+            ],
           ),
         ),
       ),

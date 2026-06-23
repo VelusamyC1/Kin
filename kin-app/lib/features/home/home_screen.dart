@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme.dart';
 import '../auth/auth_provider.dart';
 import 'home_provider.dart';
 
@@ -11,120 +12,115 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(meProvider);
     final matches = ref.watch(myMatchesProvider);
-    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KIN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 4)),
+        title: const Text('kin', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24, letterSpacing: -1)),
         actions: [
           IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () => context.push('/notifications')),
           IconButton(icon: const Icon(Icons.person_outline), onPressed: () => context.push('/profile')),
         ],
       ),
       body: RefreshIndicator(
+        color: kLime,
         onRefresh: () async {
           ref.invalidate(meProvider);
           ref.invalidate(myMatchesProvider);
         },
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           children: [
             // Rating card
             me.when(
               data: (data) {
                 final rating = data['rating'] as Map?;
-                return Card(
-                  color: cs.primaryContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${data['firstName']} ${data['lastName']}',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
-                        Text('${data['city'] ?? ''}, ${data['country'] ?? ''}',
-                            style: TextStyle(color: cs.onPrimaryContainer.withOpacity(0.7))),
-                        const SizedBox(height: 16),
-                        if (rating != null) ...[
-                          Row(children: [
-                            _StatChip(label: 'ELO', value: '${rating['elo']}'),
-                            const SizedBox(width: 12),
-                            _StatChip(label: 'LEVEL', value: '${rating['level']}'),
-                            const SizedBox(width: 12),
-                            _StatChip(label: 'TIER', value: '${rating['tier']}'),
-                          ]),
-                          const SizedBox(height: 8),
-                          Text('${rating['matchesConfirmed']} confirmed matches',
-                              style: TextStyle(fontSize: 12, color: cs.onPrimaryContainer.withOpacity(0.6))),
-                        ] else
-                          const Text('No rating yet — log your first match!'),
-                      ],
-                    ),
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(color: kDarkCard, borderRadius: BorderRadius.circular(20)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${data['firstName']} ${data['lastName']}',
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: kWhite),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${data['city'] ?? ''}, ${data['country'] ?? ''}',
+                        style: TextStyle(color: Colors.white.withOpacity(0.4)),
+                      ),
+                      const SizedBox(height: 20),
+                      if (rating != null) ...[
+                        Row(
+                          children: [
+                            _StatBlock(label: 'ELO', value: '${rating['elo']}'),
+                            const SizedBox(width: 24),
+                            _StatBlock(label: 'LEVEL', value: '${rating['level']}'),
+                            const SizedBox(width: 24),
+                            _StatBlock(label: 'TIER', value: '${rating['tier']}'),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '${rating['matchesConfirmed']} confirmed matches',
+                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.3)),
+                        ),
+                      ] else
+                        const Text('No rating yet — log your first match!', style: TextStyle(color: kLime)),
+                    ],
                   ),
                 );
               },
-              loading: () => const Card(child: Padding(padding: EdgeInsets.all(20), child: LinearProgressIndicator())),
-              error: (e, _) => Card(child: Padding(padding: const EdgeInsets.all(20), child: Text('Error: $e'))),
+              loading: () => Container(
+                height: 140,
+                decoration: BoxDecoration(color: kDarkCard, borderRadius: BorderRadius.circular(20)),
+                child: const Center(child: CircularProgressIndicator(color: kLime)),
+              ),
+              error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Quick actions
-            Row(children: [
-              Expanded(
-                child: _ActionCard(
-                  icon: Icons.add_circle_outline,
-                  label: 'Log Match',
-                  onTap: () => context.push('/log-match'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ActionCard(
-                  icon: Icons.leaderboard_outlined,
-                  label: 'Leaderboard',
-                  onTap: () => context.push('/leaderboard'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ActionCard(
-                  icon: Icons.show_chart,
-                  label: 'History',
-                  onTap: () => context.push('/history'),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(child: _ActionTile(icon: Icons.add_circle_outline, label: 'Log Match', onTap: () => context.push('/log-match'))),
+                const SizedBox(width: 12),
+                Expanded(child: _ActionTile(icon: Icons.leaderboard_outlined, label: 'Leaderboard', onTap: () => context.push('/leaderboard'))),
+                const SizedBox(width: 12),
+                Expanded(child: _ActionTile(icon: Icons.show_chart, label: 'History', onTap: () => context.push('/history'))),
+              ],
+            ),
+            const SizedBox(height: 28),
 
             // Recent matches
-            Text('Recent matches', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const Text('Recent matches', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kWhite)),
+            const SizedBox(height: 12),
             matches.when(
               data: (list) => list.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: Text('No matches yet. Log your first one!')),
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: Text('No matches yet', style: TextStyle(color: Colors.white.withOpacity(0.4)))),
                     )
-                  : Column(
-                      children: list.take(10).map((m) => _MatchTile(match: m)).toList(),
-                    ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Error: $e'),
+                  : Column(children: list.take(10).map((m) => _MatchCard(match: m)).toList()),
+              loading: () => const Center(child: CircularProgressIndicator(color: kLime)),
+              error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/log-match'),
+        backgroundColor: kLime,
+        foregroundColor: kNavy,
         icon: const Icon(Icons.add),
-        label: const Text('Log Match'),
+        label: const Text('Log Match', style: TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
   }
 }
 
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value});
+class _StatBlock extends StatelessWidget {
+  const _StatBlock({required this.label, required this.value});
   final String label;
   final String value;
 
@@ -133,65 +129,82 @@ class _StatChip extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1)),
-        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.5, color: Colors.white.withOpacity(0.4))),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: kWhite)),
       ],
     );
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.icon, required this.label, required this.onTap});
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({required this.icon, required this.label, required this.onTap});
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            children: [
-              Icon(icon, size: 28),
-              const SizedBox(height: 6),
-              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-            ],
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(color: kDarkCard, borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          children: [
+            Icon(icon, color: kLime, size: 26),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(color: kWhite, fontSize: 12, fontWeight: FontWeight.w600)),
+          ],
         ),
       ),
     );
   }
 }
 
-class _MatchTile extends ConsumerWidget {
-  const _MatchTile({required this.match});
+class _MatchCard extends StatelessWidget {
+  const _MatchCard({required this.match});
   final Map<String, dynamic> match;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final status = match['status'] as String? ?? '';
     final statusColor = switch (status) {
       'confirmed' => Colors.green,
       'disputed'  => Colors.orange,
       'expired'   => Colors.grey,
-      _           => Colors.blue,
+      _           => kLime,
     };
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
         onTap: () => context.push('/match/${match['id']}'),
-        title: Text('Match · ${match['id'].toString().substring(0, 8)}...'),
-        subtitle: Text(match['loggedAt']?.toString().split('T').first ?? ''),
-        trailing: Chip(
-          label: Text(status.toUpperCase(), style: const TextStyle(fontSize: 11)),
-          backgroundColor: statusColor.withOpacity(0.15),
-          labelStyle: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
-          padding: EdgeInsets.zero,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: kDarkCard, borderRadius: BorderRadius.circular(14)),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Match · ${match['id'].toString().substring(0, 8)}...', style: const TextStyle(color: kWhite, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(match['loggedAt']?.toString().split('T').first ?? '', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
         ),
       ),
     );

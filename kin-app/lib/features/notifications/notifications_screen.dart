@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
+import '../../core/theme.dart';
 
 final _notificationsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
@@ -19,8 +20,9 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Notifications')),
       body: notifs.when(
         data: (items) => items.isEmpty
-            ? const Center(child: Text('No notifications yet.'))
+            ? Center(child: Text('No notifications yet', style: TextStyle(color: Colors.white.withOpacity(0.4))))
             : ListView.builder(
+                padding: const EdgeInsets.all(20),
                 itemCount: items.length,
                 itemBuilder: (_, i) {
                   final n = items[i];
@@ -32,43 +34,57 @@ class NotificationsScreen extends ConsumerWidget {
                     direction: DismissDirection.endToStart,
                     background: Container(
                       alignment: Alignment.centerRight,
-                      color: Colors.blue,
-                      padding: const EdgeInsets.only(right: 16),
-                      child: const Icon(Icons.done, color: Colors.white),
+                      padding: const EdgeInsets.only(right: 20),
+                      decoration: BoxDecoration(color: kLime.withOpacity(0.2), borderRadius: BorderRadius.circular(14)),
+                      child: const Icon(Icons.done, color: kLime),
                     ),
                     onDismissed: (_) async {
                       final dio = ref.read(dioProvider);
                       await dio.post('/notifications/${n['id']}/read');
                       ref.invalidate(_notificationsProvider);
                     },
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: isRead ? Colors.grey.shade100 : Theme.of(context).colorScheme.primaryContainer,
-                        child: Icon(
-                          _iconFor(type),
-                          size: 20,
-                          color: isRead ? Colors.grey : Theme.of(context).colorScheme.primary,
-                        ),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(color: kDarkCard, borderRadius: BorderRadius.circular(14)),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isRead ? Colors.white.withOpacity(0.05) : kLime.withOpacity(0.15),
+                            ),
+                            child: Icon(_iconFor(type), size: 18, color: isRead ? Colors.white.withOpacity(0.3) : kLime),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _titleFor(type),
+                                  style: TextStyle(
+                                    color: kWhite,
+                                    fontWeight: isRead ? FontWeight.normal : FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(n['createdAt']?.toString().split('T').first ?? '', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          if (!isRead)
+                            Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: kLime)),
+                        ],
                       ),
-                      title: Text(
-                        _titleFor(type),
-                        style: TextStyle(fontWeight: isRead ? FontWeight.normal : FontWeight.bold),
-                      ),
-                      subtitle: Text(n['createdAt']?.toString().split('T').first ?? ''),
-                      trailing: isRead ? null : const Icon(Icons.circle, size: 8, color: Colors.blue),
-                      onTap: () async {
-                        if (!isRead) {
-                          final dio = ref.read(dioProvider);
-                          await dio.post('/notifications/${n['id']}/read');
-                          ref.invalidate(_notificationsProvider);
-                        }
-                      },
                     ),
                   );
                 },
               ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(child: CircularProgressIndicator(color: kLime)),
+        error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
       ),
     );
   }

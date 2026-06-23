@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
+import 'theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,21 +23,20 @@ class _SplashScreenState extends State<SplashScreen> {
     const storage = FlutterSecureStorage();
     final token = await storage.read(key: 'access_token');
     if (!mounted) return;
-    context.go(token != null ? '/home' : '/login');
+    context.go(token != null ? '/home' : '/landing');
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: cs.primary,
-      body: const Center(
+    return const Scaffold(
+      backgroundColor: kNavy,
+      body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('KIN', style: TextStyle(fontSize: 64, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 8)),
+            Text('kin', style: TextStyle(fontSize: 64, fontWeight: FontWeight.w800, color: kWhite, letterSpacing: -2)),
             SizedBox(height: 8),
-            Text('doubles. ranked.', style: TextStyle(fontSize: 16, color: Colors.white70, letterSpacing: 2)),
+            Text('play. rank. rise.', style: TextStyle(fontSize: 14, color: kLime, letterSpacing: 3, fontWeight: FontWeight.w600)),
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api_client.dart';
+import '../../core/theme.dart';
 
 class LogMatchScreen extends ConsumerStatefulWidget {
   const LogMatchScreen({super.key});
@@ -11,22 +12,17 @@ class LogMatchScreen extends ConsumerStatefulWidget {
 }
 
 class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
-  // 4 player emails
   final _emails = List.generate(4, (_) => TextEditingController());
-  // Up to 3 sets: each set is [team1Games, team2Games]
   final _sets = <List<TextEditingController>>[
     [TextEditingController(text: '6'), TextEditingController(text: '4')],
   ];
   bool _loading = false;
-  Map<String, dynamic>? _preview; // predicted elo changes
+  Map<String, dynamic>? _preview;
 
   @override
   void dispose() {
     for (final c in _emails) c.dispose();
-    for (final s in _sets) {
-      s[0].dispose();
-      s[1].dispose();
-    }
+    for (final s in _sets) { s[0].dispose(); s[1].dispose(); }
     super.dispose();
   }
 
@@ -37,11 +33,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
 
   void _removeSet(int i) {
     if (_sets.length <= 1) return;
-    setState(() {
-      _sets[i][0].dispose();
-      _sets[i][1].dispose();
-      _sets.removeAt(i);
-    });
+    setState(() { _sets[i][0].dispose(); _sets[i][1].dispose(); _sets.removeAt(i); });
   }
 
   Future<void> _submit() async {
@@ -51,15 +43,10 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
         return;
       }
     }
-
     setState(() => _loading = true);
     try {
       final dio = ref.read(dioProvider);
-      final sets = _sets.map((s) => {
-        'team1Games': int.tryParse(s[0].text) ?? 0,
-        'team2Games': int.tryParse(s[1].text) ?? 0,
-      }).toList();
-
+      final sets = _sets.map((s) => {'team1Games': int.tryParse(s[0].text) ?? 0, 'team2Games': int.tryParse(s[1].text) ?? 0}).toList();
       final res = await dio.post('/matches', data: {
         'team1Player1Email': _emails[0].text.trim(),
         'team1Player2Email': _emails[1].text.trim(),
@@ -71,9 +58,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
       setState(() => _preview = Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -84,74 +69,79 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Log Match')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Team 1
-            _sectionHeader('Team 1', Colors.blue),
+            _sectionLabel('TEAM 1', kLime),
+            const SizedBox(height: 8),
             _emailField(_emails[0], 'Player 1 email'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _emailField(_emails[1], 'Player 2 email'),
-            const SizedBox(height: 16),
-
-            // Team 2
-            _sectionHeader('Team 2', Colors.red),
-            _emailField(_emails[2], 'Player 3 email'),
-            const SizedBox(height: 8),
-            _emailField(_emails[3], 'Player 4 email'),
             const SizedBox(height: 24),
 
-            // Sets
+            _sectionLabel('TEAM 2', Colors.orangeAccent),
+            const SizedBox(height: 8),
+            _emailField(_emails[2], 'Player 3 email'),
+            const SizedBox(height: 10),
+            _emailField(_emails[3], 'Player 4 email'),
+            const SizedBox(height: 28),
+
             Row(
               children: [
-                const Expanded(child: Text('Sets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                const Expanded(child: Text('SETS', style: TextStyle(color: kLime, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.5))),
                 if (_sets.length < 3)
-                  TextButton.icon(icon: const Icon(Icons.add, size: 16), label: const Text('Add set'), onPressed: _addSet),
+                  GestureDetector(
+                    onTap: _addSet,
+                    child: const Row(children: [Icon(Icons.add, color: kLime, size: 16), SizedBox(width: 4), Text('Add set', style: TextStyle(color: kLime, fontSize: 13))]),
+                  ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             ..._sets.asMap().entries.map((entry) {
               final i = entry.key;
               final s = entry.value;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Row(children: [
-                  Text('Set ${i + 1}  ', style: const TextStyle(fontWeight: FontWeight.w500)),
-                  Expanded(child: _gamesField(s[0], 'Team 1')),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('–', style: TextStyle(fontSize: 20))),
-                  Expanded(child: _gamesField(s[1], 'Team 2')),
-                  IconButton(icon: const Icon(Icons.remove_circle_outline, size: 20), onPressed: () => _removeSet(i)),
-                ]),
+                child: Row(
+                  children: [
+                    Text('Set ${i + 1}', style: TextStyle(color: Colors.white.withOpacity(0.5), fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _gamesField(s[0], 'T1')),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('–', style: TextStyle(fontSize: 22, color: Colors.white.withOpacity(0.3))),
+                    ),
+                    Expanded(child: _gamesField(s[1], 'T2')),
+                    IconButton(icon: Icon(Icons.remove_circle_outline, color: Colors.white.withOpacity(0.3), size: 20), onPressed: () => _removeSet(i)),
+                  ],
+                ),
               );
             }),
+            const SizedBox(height: 28),
 
-            const SizedBox(height: 24),
-
-            if (_preview != null) ...[
-              Card(
-                color: Colors.green.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Match logged ✓', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                      const SizedBox(height: 8),
-                      Text('Predicted Elo change: ${_preview!['predictedEloChange'] > 0 ? '+' : ''}${_preview!['predictedEloChange']}'),
-                      Text('Match ID: ${_preview!['id'].toString().substring(0, 8)}...'),
-                      Text('Status: ${_preview!['status']}'),
-                      const SizedBox(height: 12),
-                      FilledButton(onPressed: () => context.go('/home'), child: const Text('Back to home')),
-                    ],
-                  ),
+            if (_preview != null)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: kLime.withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: kLime.withOpacity(0.3))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(children: [Icon(Icons.check_circle, color: kLime, size: 20), SizedBox(width: 8), Text('Match logged', style: TextStyle(color: kLime, fontWeight: FontWeight.w700))]),
+                    const SizedBox(height: 12),
+                    Text('Predicted Elo: ${(_preview!['predictedEloChange'] as num) > 0 ? '+' : ''}${_preview!['predictedEloChange']}', style: const TextStyle(color: kWhite)),
+                    const SizedBox(height: 4),
+                    Text('Status: ${_preview!['status']}', style: TextStyle(color: Colors.white.withOpacity(0.5))),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: () => context.go('/home'), child: const Text('Back to home')),
+                  ],
                 ),
-              ),
-            ] else
-              FilledButton(
+              )
+            else
+              ElevatedButton(
                 onPressed: _loading ? null : _submit,
                 child: _loading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: kNavy))
                     : const Text('Log Match'),
               ),
           ],
@@ -160,21 +150,20 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
     );
   }
 
-  Widget _sectionHeader(String label, Color color) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: color, letterSpacing: 1)),
-      );
+  Widget _sectionLabel(String text, Color color) => Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.5));
 
-  Widget _emailField(TextEditingController c, String hint) => TextFormField(
-        controller: c,
-        keyboardType: TextInputType.emailAddress,
-        decoration: InputDecoration(labelText: hint, isDense: true),
-      );
+  Widget _emailField(TextEditingController c, String hint) => TextField(
+    controller: c,
+    keyboardType: TextInputType.emailAddress,
+    style: const TextStyle(color: kWhite),
+    decoration: InputDecoration(hintText: hint),
+  );
 
-  Widget _gamesField(TextEditingController c, String hint) => TextFormField(
-        controller: c,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(labelText: hint, isDense: true),
-        textAlign: TextAlign.center,
-      );
+  Widget _gamesField(TextEditingController c, String hint) => TextField(
+    controller: c,
+    keyboardType: TextInputType.number,
+    textAlign: TextAlign.center,
+    style: const TextStyle(color: kWhite, fontSize: 18, fontWeight: FontWeight.w700),
+    decoration: InputDecoration(hintText: hint, contentPadding: const EdgeInsets.symmetric(vertical: 14)),
+  );
 }

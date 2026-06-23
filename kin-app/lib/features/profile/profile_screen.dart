@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme.dart';
 import '../auth/auth_provider.dart';
 import '../home/home_provider.dart';
 
@@ -28,41 +29,41 @@ class ProfileScreen extends ConsumerWidget {
       body: me.when(
         data: (data) {
           final rating = data['rating'] as Map?;
+          final initials = '${(data['firstName'] as String? ?? 'U')[0]}${(data['lastName'] as String? ?? '')[0]}';
+
           return ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: Text(
-                  '${(data['firstName'] as String? ?? 'U')[0]}${(data['lastName'] as String? ?? '')[0]}',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimaryContainer),
+              // Avatar
+              Center(
+                child: CircleAvatar(
+                  radius: 48,
+                  backgroundColor: kLime,
+                  child: Text(initials, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: kNavy)),
                 ),
               ),
               const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  '${data['firstName']} ${data['lastName']}',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Center(child: Text(data['email'] as String? ?? '', style: const TextStyle(color: Colors.grey))),
-              const SizedBox(height: 24),
+              Center(child: Text('${data['firstName']} ${data['lastName']}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: kWhite))),
+              Center(child: Text(data['email'] as String? ?? '', style: TextStyle(color: Colors.white.withOpacity(0.4)))),
+              const SizedBox(height: 28),
 
-              _InfoTile(label: 'Country', value: data['country']?.toString() ?? '—'),
-              _InfoTile(label: 'City', value: data['city']?.toString() ?? '—'),
-              _InfoTile(label: 'Hand', value: data['hand']?.toString() ?? '—'),
-              _InfoTile(label: 'Tournaments', value: data['playsTournaments'] == true ? 'Yes' : 'No'),
+              // Info rows
+              _InfoRow(label: 'Country', value: data['country']?.toString() ?? '—'),
+              _InfoRow(label: 'City', value: data['city']?.toString() ?? '—'),
+              _InfoRow(label: 'Hand', value: data['hand']?.toString() ?? '—'),
+              _InfoRow(label: 'Tournaments', value: data['playsTournaments'] == true ? 'Yes' : 'No'),
 
               if (rating != null) ...[
-                const Divider(height: 32),
-                const Text('Rating', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 8),
-                _InfoTile(label: 'Elo', value: '${rating['elo']}'),
-                _InfoTile(label: 'Level', value: '${rating['level']}'),
-                _InfoTile(label: 'Tier', value: '${rating['tier']}'),
-                _InfoTile(label: 'Matches Confirmed', value: '${rating['matchesConfirmed']}'),
-                _InfoTile(label: 'Status', value: rating['isProvisional'] == true ? 'Provisional (< 5 matches)' : 'Established'),
+                const SizedBox(height: 20),
+                Container(height: 1, color: Colors.white.withOpacity(0.08)),
+                const SizedBox(height: 20),
+                Text('RATING', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                _InfoRow(label: 'Elo', value: '${rating['elo']}', valueColor: kLime),
+                _InfoRow(label: 'Level', value: '${rating['level']}'),
+                _InfoRow(label: 'Tier', value: '${rating['tier']}'),
+                _InfoRow(label: 'Matches', value: '${rating['matchesConfirmed']}'),
+                _InfoRow(label: 'Status', value: rating['isProvisional'] == true ? 'Provisional' : 'Established'),
               ],
 
               const SizedBox(height: 32),
@@ -74,27 +75,28 @@ class ProfileScreen extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(child: CircularProgressIndicator(color: kLime)),
+        error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.red))),
       ),
     );
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({required this.label, required this.value});
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value, this.valueColor});
   final String label;
   final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4))),
           const Spacer(),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.w600, color: valueColor ?? kWhite)),
         ],
       ),
     );
